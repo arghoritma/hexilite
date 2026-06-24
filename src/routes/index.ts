@@ -1,9 +1,9 @@
+import HyperExpress from 'hyper-express';
 import authRoutes from './authRoutes'
 import userRoutes from './userRoutes';
 import websocketRoutes from './websocketRoutes';
-import { Router } from 'ultimate-express';
 
-const router = Router();
+const router = new HyperExpress.Router();
 
 router.use('/auth', authRoutes)
 router.use('/users', userRoutes);

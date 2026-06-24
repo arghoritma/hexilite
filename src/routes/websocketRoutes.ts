@@ -1,9 +1,8 @@
-import { Router } from "ultimate-express";
+import HyperExpress from 'hyper-express';
 import WebSocketController from "../controllers/WebSocketController";
 
-const router = Router();
+const router = new HyperExpress.Router();
 
-// Public endpoint to broadcast message to all websocket clients
 router.post("/broadcast", WebSocketController.broadcast);
 
 export default router;

@@ -1,4 +1,4 @@
-import UltimateWS from 'ultimate-ws';
+import HyperExpress from 'hyper-express';
 
 interface WebSocketBroadcastMessage {
   type: string;
@@ -6,26 +6,22 @@ interface WebSocketBroadcastMessage {
 }
 
 export class WebSocketService {
-  private wss: any;
-  private clients: Set<any> = new Set();
-  constructor(app: any) {
-    // app = instance express/ultimate-express
-    this.wss = new (UltimateWS as any).WebSocketServer({
-      server: app,
-      path: '/ws',
-    });
-    this.wss.on('connection', (ws: any) => {
+  private clients: Set<HyperExpress.Websocket> = new Set();
+
+  constructor(server: HyperExpress.Server) {
+    server.ws('/ws', {
+      idle_timeout: 60,
+      max_payload_length: 32 * 1024,
+    }, (ws: any) => {
       this.clients.add(ws);
       ws.on('close', () => this.clients.delete(ws));
     });
   }
+
   broadcast(message: WebSocketBroadcastMessage) {
     const data = JSON.stringify(message);
     for (const client of this.clients) {
-      if (client.readyState === 1) { // 1 = OPEN
-        client.send(data);
-      }
+      client.send(data);
     }
   }
 }
-

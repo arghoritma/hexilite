@@ -1,4 +1,4 @@
-import { Request, Response } from "ultimate-express";
+import { Request, Response } from "hyper-express";
 import { hashPassword, verifyPassword } from "../utils/hash";
 import { db } from "../config/native-database";
 import { v4 as uuid } from "uuid";
@@ -29,11 +29,10 @@ export default class UserController {
     return UserController.authServiceInstance
   }
 
-  static async register(req: Request<{}, {}, RegisterRequest>, res: Response) {
+  static async register(req: Request, res: Response) {
     try {
-      const { name, email, password } = req.body;
+      const { name, email, password } = req.body as RegisterRequest;
 
-      // Check if user already exists
       const existingUser = db("users").where("email", email).first();
       if (existingUser) {
         return res.status(400).json({
@@ -42,11 +41,9 @@ export default class UserController {
         });
       }
 
-      // Hash password
       const hashedPassword = await hashPassword(password);
       const userId = uuid();
 
-      // Create user
       const user = db("users")
         .insertReturning({
           id: userId,
@@ -56,7 +53,6 @@ export default class UserController {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }, ['id', 'name', 'email', 'created_at'])
-
 
       res.status(201).json({
         code: "REGISTER_SUCCESS",
@@ -80,11 +76,10 @@ export default class UserController {
     }
   }
 
-  static async login(req: Request<{}, {}, LoginRequest>, res: Response) {
+  static async login(req: Request, res: Response) {
     try {
-      const { email, password, deviceId } = req.body;
+      const { email, password, deviceId } = req.body as LoginRequest;
 
-      // Find user
       const user = db("users").where("email", email).first();
       if (!user) {
         return res.status(401).json({
@@ -93,7 +88,6 @@ export default class UserController {
         });
       }
 
-      // Verify password
       const validPassword = await verifyPassword(password, user.password);
       if (!validPassword) {
         return res.status(401).json({
@@ -102,12 +96,10 @@ export default class UserController {
         });
       }
 
-      // Login menggunakan AuthService
-
       const authService = UserController.getAuthService();
 
       const userAgent = req.headers["user-agent"] || "unknown";
-      const ip = req.ip || req.connection.remoteAddress || "unknown";
+      const ip = req.ip || "unknown";
 
       const loginResult = await authService.login(
         user,
@@ -138,7 +130,7 @@ export default class UserController {
 
   static async refreshToken(req: Request, res: Response) {
     try {
-      const { refreshToken } = req.body;
+      const { refreshToken } = req.body as { refreshToken: string };
 
       if (!refreshToken) {
         return res.status(400).json({
@@ -227,7 +219,6 @@ export default class UserController {
     }
   }
 
-
   static async getSessions(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
@@ -247,7 +238,7 @@ export default class UserController {
         code: "SUCCESS",
         message: "Sessions retrieved successfully",
         data: {
-          sessions: sessions.map((session) => ({
+          sessions: sessions.map((session: any) => ({
             sessionId: session.sessionId,
             deviceId: session.deviceId,
             userAgent: session.userAgent,

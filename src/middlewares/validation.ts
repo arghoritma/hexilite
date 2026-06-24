@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'ultimate-express';
+import { Request, Response } from 'hyper-express';
 
 interface ValidationRule {
   required?: boolean;
@@ -13,20 +13,18 @@ interface ValidationSchema {
 }
 
 export const validateInput = (schema: ValidationSchema) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: Function) => {
     const errors: { [key: string]: string } = {};
 
     for (const [field, rules] of Object.entries(schema)) {
-      const value = req.body[field];
+      const value = (req.body as any)[field];
 
-      // Required check
       if (rules.required && !value) {
         errors[field] = `${field} is required`;
         continue;
       }
 
       if (value) {
-        // String length checks
         if (rules.minLength && value.length < rules.minLength) {
           errors[field] = `${field} must be at least ${rules.minLength} characters`;
         }
@@ -35,12 +33,10 @@ export const validateInput = (schema: ValidationSchema) => {
           errors[field] = `${field} must not exceed ${rules.maxLength} characters`;
         }
 
-        // Pattern check
         if (rules.pattern && !rules.pattern.test(value)) {
           errors[field] = `${field} format is invalid`;
         }
 
-        // Custom validation
         if (rules.custom && !rules.custom(value)) {
           errors[field] = `${field} validation failed`;
         }

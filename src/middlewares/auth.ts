@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "ultimate-express";
+import { Request, Response } from "hyper-express";
 import { verifyAccessToken } from "../utils/jwt";
 import { AuthService } from "../services/auth";
 import { SessionService } from "../services/session";
@@ -23,11 +23,9 @@ const redisService = new RedisService();
 
 export const authMiddleware = async (
   req: Request,
-  res: Response,
-  next: NextFunction
+  res: Response
 ): Promise<void> => {
   try {
-    // Get token from header
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       res.status(401).json({
@@ -39,11 +37,9 @@ export const authMiddleware = async (
 
     const token = authHeader.split(" ")[1];
 
-    // Verify access token
     const decoded = verifyAccessToken(token);
     const { userId, sessionId, deviceId } = decoded;
 
-    // Cek session di cache terlebih dahulu
     let cachedSession = null;
 
     if (redisService.isAvailable()) {
@@ -51,7 +47,6 @@ export const authMiddleware = async (
     }
 
     if (cachedSession) {
-      // Session ditemukan di cache
       (req as AuthRequest).user = {
         id: cachedSession.user.id,
         name: cachedSession.user.name,
@@ -59,10 +54,8 @@ export const authMiddleware = async (
         sessionId: cachedSession.sessionId,
         deviceId: cachedSession.deviceId
       };
-      return next();
+      return;
     }
-
-    // Jika tidak ada di cache, cek database
 
     const dbSession = await sessionService.getActiveSession(sessionId);
 
@@ -74,7 +67,6 @@ export const authMiddleware = async (
       return;
     }
 
-    // Get user data
     const [user] = db('users')
       .where('id', userId)
       .select(['id', 'name', 'email'])
@@ -88,7 +80,6 @@ export const authMiddleware = async (
     }
 
     if (await redisService.isReallyAvailable()) {
-      // Update cache
       const cacheData = {
         sessionId: dbSession.id,
         userId: user.id,
@@ -120,8 +111,6 @@ export const authMiddleware = async (
       sessionId: dbSession.id,
       deviceId: dbSession.device_id
     };
-
-    next();
   } catch (error: any) {
     res.status(401).json({
       code: 'AUTH_ERROR',

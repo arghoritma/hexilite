@@ -1,3 +1,5 @@
+import HyperExpress from 'hyper-express';
+
 export interface UserPayload {
   id: string;
   name: string;
@@ -6,11 +8,10 @@ export interface UserPayload {
   deviceId: string;
 }
 
-// Lakukan "declaration merging" untuk menambahkan properti custom ke interface Request
 declare global {
-  namespace Express {
+  namespace HyperExpress {
     interface Request {
-      user?: UserPayload; // Gunakan '?' karena properti ini tidak ada di semua request
+      user?: UserPayload;
     }
   }
 }

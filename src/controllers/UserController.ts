@@ -1,7 +1,6 @@
-import { Response } from "ultimate-express";
+import { Response } from "hyper-express";
 import db from "../config/database";
 import { AuthRequest } from "../middlewares/auth";
-
 
 export default class UserController {
 
@@ -46,6 +45,5 @@ export default class UserController {
       });
     }
   }
-
 
 }

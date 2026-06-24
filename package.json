@@ -21,7 +21,6 @@
     "@oclif/core": "^4.3.3",
     "@types/bcrypt": "^5.0.2",
     "@types/dotenv": "^6.1.1",
-    "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/knex": "^0.15.2",
     "@types/node": "^22.15.30",
@@ -29,14 +28,13 @@
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.2.0",
     "dotenv": "^16.5.0",
+    "hyper-express": "^6.17.3",
     "ioredis": "^5.6.1",
     "jsonwebtoken": "^9.0.2",
     "knex": "^3.1.0",
     "redis": "^5.5.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
-    "ultimate-express": "^2.0.6",
-    "ultimate-ws": "^2.0.4",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
