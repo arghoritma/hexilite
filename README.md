@@ -1,310 +1,613 @@
-# Express TypeScript Template
+# Hexilite — Template Backend RESTful API
 
-Template backend RESTful API menggunakan ultimate-express dan TypeScript dengan fitur autentikasi dan manajemen database dan websocket.
+Template backend RESTful API ngagunakeun **HyperExpress** jeung **TypeScript**, geus dilengkepan sistem auténtikasi, manajemen database, WebSocket realtime, sarta caching Redis.
 
-## Teknologi yang Digunakan
+---
 
-- **Ultimate Express** - Framework web untuk Node.js, sangat cepat (berbasis µWebSockets)
-- **TypeScript** - JavaScript dengan penambahan tipe data
-- **SQLite3** - Database SQL ringan (Bisa di ganti dengan DBMS lain [MySQL, Postgres, dll])
-- **Knex.js** - SQL query builder dan migration tool
-- **JWT** - JSON Web Token untuk autentikasi
-- **Bcrypt** - Untuk hashing password
-- **Nodemon** - Development server dengan auto-reload
+## Daptar Eusi
 
-### Benchmark Ultimate Express
+- [Téknologi nu Dipaké](#téknologi-nu-dipaké)
+- [Fitur](#fitur)
+- [Struktur Proyék](#struktur-proyék)
+- [Syarat Sistem](#syarat-sistem)
+- [Instalasi](#instalasi)
+- [Pamakéan](#pamakéan)
+- [API Endpoints](#api-endpoints)
+- [WebSocket](#websocket)
+- [Validasi](#validasi)
+- [Kaamanan](#kaamanan)
+- [NGINX Proxy](#nginx-proxy)
+- [Lisensi](#lisensi)
 
-| Test                                       | Express req/sec | Ultimate Express req/sec |
-| ------------------------------------------ | --------------- | ------------------------ |
-| routing/simple-routes (/)                  | 11.16k          | 75.14k                   |
-| routing/lot-of-routes (/999)               | 4.63k           | 54.57k                   |
-| routing/some-middlewares (/90)             | 10.12k          | 61.92k                   |
-| routers/nested-routers (/abccc/nested/ddd) | 10.18k          | 51.15k                   |
-| static file (/static/index.js)             | 6.58k           | 32.45k                   |
-| ejs engine (/test)                         | 5.50k           | 40.82k                   |
-| body-urlencoded (/abc)                     | 8.07k           | 50.52k                   |
-| compression-file (/small-file)             | 4.81k           | 14.92k                   |
+---
 
-> Ultimate Express rata-rata 5-10x lebih cepat dari Express.js pada berbagai skenario routing dan middleware.
+## Téknologi nu Dipaké
 
-### Perbandingan Kecepatan Ultimate Express dengan Framework Lain
+| Téknologi | Katerangan |
+|-----------|------------|
+| **HyperExpress** | Framework web Node.js super gancang, didasaran ku µWebSockets (C++). 5-10× leuwih gancang batan Express.js |
+| **TypeScript** | JavaScript kalawan tipe data pikeun ngurangan bug |
+| **SQLite3** | Database SQL anu hampang tur basajan (bisa diganti MySQL, Postgres, jsb.) |
+| **Knex.js** | SQL query builder tur migration tool |
+| **JWT** | JSON Web Token pikeun auténtikasi |
+| **Bcrypt** | Pikeun ngahash password jeung token |
+| **Redis** | Caching sési pikeun aksés nu leuwih gancang |
+| **ioredis** | Klien Redis pikeun Node.js |
 
-| Framework          | Req/sec (64) | Req/sec (256) | Req/sec (512) |
-| ------------------ | ------------ | ------------- | ------------- |
-| ultimate-express   | 167,079      | 183,107       | 184,765       |
-| uwebsockets        | 152,524      | 173,217       | 176,365       |
-| elysia             | 150,267      | 167,667       | 167,665       |
-| sifrr              | 150,016      | 168,058       | 172,702       |
-| mesh               | 143,917      | 159,453       | 166,114       |
-| routejs-uwebsocket | 137,966      | 149,189       | 155,895       |
-| hyper-express      | 131,791      | 144,777       | 147,443       |
+### Perbandingan HyperExpress vs Express.js
 
-> Sumber: [Web Frameworks Benchmark](https://web-frameworks-benchmark.netlify.app/result?l=javascript) & TechEmpower. Ultimate Express menempati posisi teratas untuk framework Node.js/JavaScript tercepat dalam benchmark ini.
+| Skenario | Express.js | HyperExpress |
+|----------|-----------|-------------|
+| Route basajan (`/`) | 11.16k req/det | 75.14k req/det |
+| Loba route (`/999`) | 4.63k req/det | 54.57k req/det |
+| Middleware (`/90`) | 10.12k req/det | 61.92k req/det |
+| Router nését (`/abccc/nested/ddd`) | 10.18k req/det | 51.15k req/det |
+| File statis | 6.58k req/det | 32.45k req/det |
+| Body urlencoded | 8.07k req/det | 50.52k req/det |
+
+---
 
 ## Fitur
 
-- Sistem autentikasi lengkap (register, login)
-- Manajemen pengguna
-- Database migrations dan seeding
-- Middleware validasi input
-- JWT middleware untuk proteksi route
-- Development server dengan hot-reload
-- Konfigurasi database yang fleksibel
-- **WebSocket realtime** (broadcast ke semua client, contoh client disediakan)
+- [x] Auténtikasi lengkap (registrasi, login, refresh token, logout)
+- [x] Manajemen sési multi-device
+- [x] Refresh token rotasi (token anyar unggal refresh)
+- [x] Caching sési ngagunakeun Redis
+- [x] WebSocket realtime (broadcast ka sakabéh klien)
+- [x] Middleware validasi input
+- [x] Database migrations
+- [x] TypeScript sapanjang kode
+- [x] Hot-reload dina mode development
 
-## WebSocket
+---
 
-Fitur WebSocket menggunakan [ultimate-ws](https://www.npmjs.com/package/ultimate-ws) dan sudah terintegrasi dengan ultimate-express.
-
-- Endpoint WebSocket: `ws://localhost:3000/ws`
-- Endpoint HTTP broadcast: `POST /api/ws/broadcast`
-
-### Contoh Client WebSocket
-
-Buka file `public/ws-client.html` di browser, klik "Connect WebSocket" lalu klik "Send Test Broadcast" untuk mengirim pesan ke semua client yang terhubung.
-
-### Contoh Broadcast via HTTP
-
-Request:
-
-```http
-POST /api/ws/broadcast
-Content-Type: application/json
-
-{
-  "type": "test",
-  "payload": { "msg": "Hello from HTTP!" }
-}
-```
-
-Semua client yang terhubung ke WebSocket akan menerima pesan broadcast ini.
-
-## Struktur Proyek
+## Struktur Proyék
 
 ```
 src/
-├── config/         # Konfigurasi aplikasi
-├── controllers/    # Logic bisnis
-├── database/       # Migrations dan seeds
-├── middlewares/    # Express middlewares
-├── routes/         # Definisi route API
-└── index.ts        # Entry point aplikasi
+├── index.ts                    # Entry point — nyetél server, middleware, WebSocket
+├── knexfile.ts                 # Konfigurasi Knex (SQLite)
+│
+├── commands/
+│   └── migrate-latest.ts       # Paréntah pikeun ngajalankeun migrasi
+│
+├── config/
+│   ├── database.ts             # Konéksi Knex + migrasi otomatis
+│   ├── native-database.ts      # Bungkus SQLite langsung (better-sqlite3)
+│   └── dynamicDB.ts            # Manajemén database SQLite dinamis
+│
+├── controllers/                # Logic bisnis (pangatur rute)
+│   ├── AuthController.ts       # Registrasi, login, refresh token, logout, sési
+│   ├── UserController.ts       # Profil pamaké
+│   └── WebSocketController.ts  # Broadcast via HTTP
+│
+├── database/migrations/        # File migrasi Knex
+│   ├── 20250610032152_users.ts
+│   ├── 20250610032201_sessions.ts
+│   └── 20250616081237_refresh_tokens.ts
+│
+├── middlewares/                # Middleware HyperExpress
+│   ├── auth.ts                 # Auténtikasi JWT + cék sési
+│   ├── guard.ts                # JWT guard basajan
+│   ├── validation.ts           # Validasi input umum
+│   └── validations/
+│       └── userValidation.ts   # Skéma validasi register & login
+│
+├── routes/                     # Definisi rute API
+│   ├── index.ts                # Pangatur rute utama (/api)
+│   ├── authRoutes.ts           # /api/auth/*
+│   ├── userRoutes.ts           # /api/users/*
+│   └── websocketRoutes.ts      # /api/ws/*
+│
+├── services/                   # Lapisan layanan (bisnis logic)
+│   ├── auth.ts                 # Layanan auténtikasi
+│   ├── redis.ts                # Layanan Redis (ioredis)
+│   ├── session.ts              # Layanan manajemén sési
+│   ├── sqlite.ts               # QueryBuilder SQLite sorangan
+│   └── websocket.ts            # Layanan WebSocket + broadcast
+│
+├── types/
+│   └── index.d.ts              # Tipe-tipe global (declaration merging)
+│
+└── utils/
+    ├── hash.ts                 # Hashing bcrypt
+    ├── helper.ts               # Pitulung tanggal
+    └── jwt.ts                  # JWT sign / verify
 ```
 
-## Persyaratan
+### Alur Paménta
 
-- Node.js (versi 14 atau lebih baru)
-- npm atau yarn
+```
+HTTP Request
+    │
+    ▼
+Body Parser Middleware (nyieun req.body tina JSON)
+    │
+    ▼
+Route /api/auth/login
+    │
+    ▼
+Validation Middleware (mariksa input)
+    │
+    ▼
+AuthController.login
+    │
+    ├── AuthService.login
+    │   ├── SessionService.createSession
+    │   ├── Sign JWT (access + refresh token)
+    │   └── RedisService.set (cache sesi)
+    │
+    ▼
+Response JSON ka klien
+```
+
+---
+
+## Syarat Sistem
+
+- Node.js 18+ (LTS disarankeun)
+- npm atawa yarn
+- Redis (opsional — aplikasi tetep jalan tanpa Redis)
+
+---
 
 ## Instalasi
 
-1. Clone repository:
-
 ```bash
-git clone https://github.com/arghoritma/apilite.git
-cd apilite
-```
+# 1. Kloning repositori
+git clone https://github.com/arghoritma/hexilite.git
+cd hexilite
 
-2. Install dependencies:
-
-```bash
+# 2. Pasang sadaya dependensi
 npm install
+
+# 3. Jieun file .env
+cp .env.example .env
+# Édit .env eusina: PORT, JWT_SECRET, ACCESS_SECRET, REFRESH_SECRET, jsb.
+
+# 4. Jalanan migrasi database
+npm run migrate
 ```
 
-3. Setup environment variables:
-   Buat file `.env` di root proyek dan isi dengan:
+### Conto `.env`
 
 ```env
 PORT=3000
-JWT_SECRET=your-secret-key
+NODE_ENV=development
+DB_NAME=hexilite
+
+# JWT
+ACCESS_SECRET=rahasia-access-anjeun
+REFRESH_SECRET=rahasia-refresh-anjeun
+
+# Redis (opsional)
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
 
-## Penggunaan
+---
 
-### Development
+## Pamakéan
 
-Jalankan server development dengan hot-reload:
+### Development (kalawan hot-reload)
 
 ```bash
 npm run dev
 ```
 
-### Database Management
-
-Menjalankan migrasi:
+### Production
 
 ```bash
+npm run build
+npm start
+```
+
+### Manajemén Database
+
+```bash
+# Jalanan migrasi
 npm run migrate
-```
 
-Membatalkan migrasi terakhir:
-
-```bash
+# Balikkeun migrasi pamungkas
 npm run migrate:rollback
-```
 
-Menjalankan seeder:
-
-```bash
+# Jalanan seeder
 npm run seed
 ```
 
-## API Endpoints
-
-### Autentikasi
-
-- `POST /api/auth/register` - Registrasi pengguna baru
-
-  Request:
-  ```json
-  {
-    "name": "string",
-    "email": "string",
-    "password": "string"
-  }
-  ```
-  Response:
-  ```json
-  {
-    "code": "REGISTER_SUCCESS",
-    "message": "User registered successfully",
-    "data": {
-      "user": {
-        "id": "string",
-        "name": "string",
-        "email": "string",
-        "createdAt": "2024-06-10T12:00:00.000Z"
-      }
-    }
-  }
-  ```
-
-- `POST /api/auth/login` - Login pengguna
-
-  Request:
-  ```json
-  {
-    "email": "string",
-    "password": "string"
-  }
-  ```
-  Response:
-  ```json
-  {
-    "code": "LOGIN_SUCCESS",
-    "message": "Login successful",
-    "data": {
-      "accessToken": "string",
-      "refreshToken": "string",
-      "user": {
-        "id": "string",
-        "name": "string",
-        "email": "string",
-        "createdAt": "2024-06-10T12:00:00.000Z"
-      },
-      "session": {
-        "sessionId": "string",
-        "deviceId": "string",
-        "userAgent": "string",
-        "ip": "string",
-        "createdAt": "2024-06-10T12:00:00.000Z",
-        "expiredAt": "2024-06-11T12:00:00.000Z"
-      }
-    }
-  }
-  ```
-
-- `POST /api/auth/logout` - Logout dari device saat ini (memerlukan autentikasi)
-
-  Response:
-  ```json
-  {
-    "code": "LOGOUT_SUCCESS",
-    "message": "Logout successful"
-  }
-  ```
-
-- `POST /api/auth/logout-all` - Logout dari semua device (memerlukan autentikasi)
-
-  Response:
-  ```json
-  {
-    "code": "LOGOUT_ALL_SUCCESS",
-    "message": "Logged out from all devices successfully"
-  }
-  ```
-
-### Pengguna
-
-- `GET /api/users/profile` - Mendapatkan profil pengguna (memerlukan autentikasi)
-
-> Untuk mengakses protected route ini, Anda harus menggunakan access token yang didapatkan saat login dan memasukkannya ke dalam header autentikasi Bearer.
-
-Contoh penggunaan dengan curl:
+### Docker
 
 ```bash
-curl -H "Authorization: Bearer <access_token_anda>" http://localhost:3000/api/users/profile
+docker-compose up -d
 ```
 
-### Refresh Token
+---
 
-- `POST /api/auth/refresh-token` - Mendapatkan access token baru menggunakan refresh token
+## API Endpoints
 
-  ```json
-  {
-    "refreshToken": "string"
-  }
-  ```
+### Auténtikasi
 
-  Response:
-  ```json
-  {
-    "code": "REFRESH_SUCCESS",
-    "message": "Token refreshed successfully",
-    "data": {
-      "accessToken": "string",
-      "refreshToken": "string"
+#### `POST /api/auth/register`
+Registrasi pamaké anyar.
+
+**Request:**
+```json
+{
+  "name": "Ujang Anu",
+  "email": "ujang@contoh.com",
+  "password": "rahasia123"
+}
+```
+
+**Response (201):**
+```json
+{
+  "code": "REGISTER_SUCCESS",
+  "message": "User registered successfully",
+  "data": {
+    "user": {
+      "id": "uuid-xxx",
+      "name": "Ujang Anu",
+      "email": "ujang@contoh.com",
+      "createdAt": "2025-06-24T12:00:00.000Z"
     }
   }
-  ```
+}
+```
 
-> Kirim refresh token yang didapat saat login untuk memperoleh access token baru. Refresh token biasanya dikirim saat access token sudah kadaluarsa.
+---
 
+#### `POST /api/auth/login`
+Lebet ka akun.
+
+**Request:**
+```json
+{
+  "email": "ujang@contoh.com",
+  "password": "rahasia123"
+}
+```
+
+**Response:**
+```json
+{
+  "code": "LOGIN_SUCCESS",
+  "message": "Login successful",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
+    "user": {
+      "id": "uuid-xxx",
+      "name": "Ujang Anu",
+      "email": "ujang@contoh.com"
+    },
+    "session": {
+      "sessionId": "uuid-yyy",
+      "deviceId": "uuid-zzz",
+      "expiresAt": "2025-07-24T12:00:00.000Z"
+    }
+  }
+}
+```
+
+> `deviceId` téh opsional. Lamun teu dikirim, bakal dijieun otomatis (crypto.randomUUID).
+
+---
+
+#### `POST /api/auth/refresh-token`
+Meunangkeun access token anyar.
+
+**Request:**
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+**Response:**
+```json
+{
+  "code": "REFRESH_SUCCESS",
+  "message": "Token refreshed successfully",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIs... (anyar)",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIs... (anyar)"
+  }
+}
+```
+
+> Unggal refresh, refresh token nu heubeul langsung dicabut (rotasi).
+
+---
+
+#### `GET /api/auth/logout`
+Kaluar tina sési ayeuna (perlu auténtikasi).
+
+**Response:**
+```json
+{
+  "code": "LOGOUT_SUCCESS",
+  "message": "Logout successful"
+}
+```
+
+---
+
+#### `GET /api/auth/logout-all`
+Kaluar tina sakabéh alat (perlu auténtikasi).
+
+**Response:**
+```json
+{
+  "code": "LOGOUT_ALL_SUCCESS",
+  "message": "Logged out from all devices successfully"
+}
+```
+
+---
+
+#### `GET /api/auth/sessions`
+Nempo daptar sési nu aktif (perlu auténtikasi).
+
+**Response:**
+```json
+{
+  "code": "SUCCESS",
+  "message": "Sessions retrieved successfully",
+  "data": {
+    "sessions": [
+      {
+        "sessionId": "uuid-yyy",
+        "deviceId": "uuid-zzz",
+        "userAgent": "Mozilla/5.0...",
+        "ip": "192.168.1.1",
+        "createdAt": "2025-06-24T12:00:00.000Z",
+        "expiredAt": "2025-07-24T12:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### Pamaké
+
+#### `GET /api/users/profile`
+Meunangkeun profil pamaké (perlu auténtikasi).
+
+```bash
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." http://localhost:3000/api/users/profile
+```
+
+**Response:**
+```json
+{
+  "code": "SUCCESS",
+  "message": "Profile retrieved successfully",
+  "data": {
+    "user": {
+      "id": "uuid-xxx",
+      "name": "Ujang Anu",
+      "email": "ujang@contoh.com",
+      "created_at": "2025-06-24T12:00:00.000Z",
+      "updated_at": "2025-06-24T12:00:00.000Z"
+    }
+  }
+}
+```
+
+---
+
+### WebSocket
+
+#### `POST /api/ws/broadcast`
+Ngirim pesen ka sakabéh klien WebSocket nu nyambung.
+
+**Request:**
+```json
+{
+  "type": "notifikasi",
+  "payload": {
+    "pesan": "Halo dulur!"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "code": "SUCCESS",
+  "message": "Broadcast sent"
+}
+```
+
+---
+
+## WebSocket
+
+Template ieu maké **WebSocket bawaan HyperExpress** (dumasar uWebSockets.js), lain `ws` atawa `socket.io`.
+
+### Éndpoint
+
+```
+ws://localhost:3000/ws
+```
+
+### Cara Maké
+
+Buka `public/ws-client.html` dina browser:
+1. Klik **Connect WebSocket**
+2. Klik **Send Test Broadcast** — atawa kirim HTTP `POST /api/ws/broadcast`
+3. Sadaya klien nu nyambung bakal narima pesen sacara realtime
+
+### Conto Kodeu (Broadcast via HTTP)
+
+```bash
+curl -X POST http://localhost:3000/api/ws/broadcast \
+  -H "Content-Type: application/json" \
+  -d '{"type": "test", "payload": {"msg": "Halo ti HTTP!"}}'
+```
+
+### Kumaha Carana Gawé?
+
+1. `WebSocketService` ngadaptarkeun rute WebSocket `/ws` kana server
+2. Unggal klien nu nyambung disimpen dina `Set`
+3. Waktu aya HTTP `POST /api/ws/broadcast`, `WebSocketController.broadcast()` ngagero `wsService.broadcast()`
+4. Pesen dikirim ka sakabéh klien nu aya dina set
+
+---
 
 ## Validasi
 
-Validasi input menggunakan middleware custom dengan aturan:
+Middleware validasi nimbrung saméméh controller. Aturan validasi:
 
-- Username: minimal 3 karakter
-- Email: format email valid
-- Password: minimal 6 karakter
+| Widang | Aturan |
+|--------|--------|
+| `name` | Wajib, 3–30 karakter |
+| `email` | Wajib, format email valid |
+| `password` | Wajib, 6–50 karakter |
 
-## Keamanan
+Lamun validasi gagal, bakal meunang response:
 
-- Password di-hash menggunakan bcrypt
-- Autentikasi menggunakan JWT
-- Validasi input untuk mencegah injeksi
-- Environment variables untuk konfigurasi sensitif
-
-## Pengembangan
-
-### Menambahkan Route Baru
-
-1. Buat controller baru di `src/controllers/`
-2. Tambahkan route di `src/routes/`
-3. Daftarkan route di `src/index.ts`
-
-### Menambahkan Tabel Baru
-
-1. Buat file migrasi baru:
-
-```bash
-knex migrate:make nama_migrasi
+```json
+{
+  "errors": {
+    "email": "email format is invalid",
+    "password": "password is required"
+  }
+}
 ```
 
-2. Edit file migrasi di `src/database/migrations/`
-3. Jalankan migrasi
+---
+
+## Kaamanan
+
+- **Password** di-hash maké bcrypt (salt rounds: 4)
+- **Refresh token** disimpen salaku hash (teu pernah disimpen atah)
+- **JWT** ditandatanganan maké secret béda pikeun access jeung refresh token
+- **Rotasi refresh token** — unggal refresh, token heubeul dicabut
+- **Validasi input** sagala rupa pikeun nyegah injeksi
+- **Konfigurasi sénsitip** maké environment variables
+- **Sési aya waktuna** (30 poé)
+
+### Alur Auténtikasi
+
+```
+Login
+  │
+  ├── Jieun sési anyar (user_sessions)
+  ├── Jieun access token (15 menit)
+  ├── Jieun refresh token (30 poé) → di-hash → disimpen (refresh_tokens)
+  ├── Cache sési ka Redis (lamun Redis sadia)
+  └── Balikkeun token ka klien
+
+Request ka rute nu diamankeun
+  │
+  ├── Cek Bearer token dina header
+  ├── Verifikasi JWT (access token)
+  ├── Cek sési dina Redis (lamun sadia)
+  ├── Lamun teu aya di Redis, cek database
+  ├── Lamun sah, teruskeun ka controller
+  └── Lamun henteu, balikkeun 401
+```
+
+### Sési & Redis Caching
+
+Redis dipaké pikeun nyimpen sési sangkan teu kudu mindeng query database:
+
+1. Waktu login, sési disimpen di Redis (expire: 30 poé)
+2. Waktu auténtikasi, Redis dipariksa heula
+3. Lamun sési aya di Redis, teu kudu query database
+4. Lamun Redis turun, aplikasi tetep jalan maké database
+5. Waktu logout, sési dihapus tina Redis
+
+---
+
+## Rute API Lengkap
+
+| Method | Rute | Auténtikasi | Katerangan |
+|--------|------|-------------|------------|
+| POST | `/api/auth/register` | ✗ | Registrasi pamaké |
+| POST | `/api/auth/login` | ✗ | Lebet ka akun |
+| POST | `/api/auth/refresh-token` | ✗ | Anyarkeun token |
+| GET | `/api/auth/sessions` | ✓ | Daptar sési aktif |
+| GET | `/api/auth/logout` | ✓ | Kaluar sési ayeuna |
+| GET | `/api/auth/logout-all` | ✓ | Kaluar sakabéh alat |
+| GET | `/api/users/profile` | ✓ | Profil pamaké |
+| POST | `/api/ws/broadcast` | ✗ | WebSocket broadcast |
+
+---
+
+## Manajemén Sési
+
+Sési dipaké pikeun ngalacak alat nu asup ka akun:
+
+- Unggal login nyieun sési anyar kalawan `deviceId`
+- Sési boga waktos kadaluwarsa (30 poé)
+- Sési bisa diliwat (`GET /api/auth/sessions`)
+- Sési bisa ditumpurkeun sawilang (`logout`) atawa sakabéhna (`logout-all`)
+- Lamun sési teu aktif, kudu login deui
+
+### Tabel Database
+
+```sql
+-- users
+id (uuid, PK)
+name (text)
+email (text, unique)
+password (text, bcrypt hash)
+created_at, updated_at (timestamp)
+
+-- user_sessions
+id (uuid, PK)
+user_id (FK → users.id)
+device_id (text)
+ip_address (varchar 45)
+user_agent (text)
+is_active (boolean, default true)
+created_at, last_used_at, expired_at (timestamp)
+
+-- refresh_tokens
+id (uuid, PK)
+session_id (FK → user_sessions.id)
+token_hash (text)
+revoked (boolean, default false)
+created_at, expired_at (timestamp)
+```
+
+---
+
+## NGINX Proxy
+
+Lamun ngagunakeun NGINX sabagé reverse proxy, ieu conto konfigurasina:
+
+```nginx
+server {
+    listen 80;
+    server_name domain-anjeun.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+> Perhatoskeun `proxy_set_header Upgrade` jeung `Connection "upgrade"` — éta diperlukeun pikeun WebSocket.
+
+---
 
 ## Lisensi
 
-ISC
+Dilisensikeun dina [ISC](https://opensource.org/licenses/ISC).
+
+---
+
+*Dijieun ku tim arghoritma — bandung, 2025*
